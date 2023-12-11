@@ -1,7 +1,7 @@
 import pygame
 import sys
 import random
-from math import sqrt, pi, sin, cos, atan, atan2
+from math import atan2, cos, sin, pi, sqrt, atan
 
 pygame.init()
 
@@ -17,20 +17,34 @@ WHITE = (255, 255, 255)
 RED = (255, 0 , 0)
 BLUE = (0, 0, 255)
 
-def elastic_collision(v1i, v2i, theta1, theta2):
+def elastic_collision(v1i, v2i, theta1, theta2): ### Devolve as velocidades e ângulos finais numa colisão de partículas
     # Calculate relative velocity components
     v_rel_x = v1i * cos(theta1) - v2i * cos(theta2)
     v_rel_y = v1i * sin(theta1) - v2i * sin(theta2)
 
     # Calculate final velocities after collision
-    v1f = v2i + 2 * (v_rel_x * cos(theta2) + v_rel_y * sin(theta2))
-    v2f = v1i + 2 * (v_rel_x * cos(theta1) + v_rel_y * sin(theta1))
+    v1f_rel_x = (v1i - v2i) * cos(theta1 - theta2)
+    v1f_rel_y = (v1i - v2i) * sin(theta1 - theta2)
+
+    v2f_rel_x = (v2i - v1i) * cos(theta2 - theta1)
+    v2f_rel_y = (v2i - v1i) * sin(theta2 - theta1)
+
+    # Calculate final velocities in the absolute frame
+    v1f_x = v_rel_x + v1f_rel_x
+    v1f_y = v_rel_y + v1f_rel_y
+
+    v2f_x = v_rel_x + v2f_rel_x
+    v2f_y = v_rel_y + v2f_rel_y
 
     # Calculate final angles after collision
-    phi1 = atan2(v1f * sin(theta1) + v2f * sin(theta2), v1f * cos(theta1) + v2f * cos(theta2))
-    phi2 = atan2(v1f * sin(theta1) + v2f * sin(theta2), v1f * cos(theta1) + v2f * cos(theta2))
+    phi1 = atan2(v1f_y, v1f_x)
+    phi2 = atan2(v2f_y, v2f_x)
 
-    return v1f, v2f, phi1, phi2
+    # Calculate final speeds
+    v1f = sqrt(v1f_x**2 + v1f_y**2)
+    v2f = sqrt(v2f_x**2 + v2f_y**2)
+
+    return [v1f, v2f, phi1, phi2]
 
 #Particle Class
 class Particle:
@@ -41,36 +55,45 @@ class Particle:
         
         self.color = RED
         self.speed = random.uniform(0, MAX_SPEED)
-        self.angle = random.uniform(-2*pi, 2*pi)
+        self.angle = random.uniform(0, 2*pi)
         self.is_tracer = is_tracer
         self.path = []
 
     def move(self):
-        return
+        ### Colisões de partículas
 
-    
-    def check_collision(self, other_particle):
+
+
+        if self.check_wall_collision():
+                self.angle = pi - self.angle               
+
+        if self.check_floor_roof_collision():
+                self.angle = - self.angle
+
+        self.x += self.speed*cos(self.angle)
+        self.y += self.speed*sin(self.angle)
+        self.path.append((self.x, self.y))
+
+    def check_collision(self, other_particle):  ### Verifica se duas partículas colidem
         if sqrt((self.y - other_particle.y)**2 + (self.x - other_particle.x)**2) <= 2*PARTICLE_RADIUS:
             return True
         else:
             return False
         
-    def check_wall_collision(self):
+    def check_wall_collision(self):  ### Verifica se a partícula colide com as paredes
         if (self.x + self.radius) >= WIDTH or (self.x - self.radius) <= 0:
             return True
         else:
             return False 
         
-    def check_floor_roof_collision(self):
+    def check_floor_roof_collision(self):  ### Verifica se a partícula colide com o chão ou o teto
         if (self.y + self.radius) >= HEIGHT or (self.y - self.radius) <= 0:
             return True
         else:
-            return False 
-        
-
+            return False       
     
 #Create particles
-particles = [Particle(x = random.uniform(0 ,800), y = random.uniform(0, 600), is_tracer = False) for i in range(NUM_PARTICLES)]
+particles = [Particle(x = random.uniform(0, WIDTH), y = random.uniform(0, HEIGHT), is_tracer = False) for i in range(NUM_PARTICLES)]
 
 #Choose a tracer
 trace_index = random.randint(0, NUM_PARTICLES - 1)
