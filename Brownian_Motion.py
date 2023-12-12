@@ -1,7 +1,7 @@
 import pygame
 import sys
 import random
-from math import atan2, cos, sin, pi, sqrt, atan
+from math import atan2, cos, sin, pi, sqrt
 
 pygame.init()
 
@@ -52,7 +52,6 @@ class Particle:
         self.x = x
         self.y = y
         self.radius = PARTICLE_RADIUS
-        
         self.color = RED
         self.speed = random.uniform(0, MAX_SPEED)
         self.angle = random.uniform(0, 2*pi)
@@ -60,19 +59,42 @@ class Particle:
         self.path = []
 
     def move(self):
-        ### Colisões de partículas
-
-
-
         if self.check_wall_collision():
-                self.angle = pi - self.angle               
+            self.angle = pi - self.angle
+            if self.x >= WIDTH/2: 
+                self.x = WIDTH - self.radius
+            else:
+                self.x = self.radius
+            self.x += self.speed*cos(self.angle)
+            self.y += self.speed*sin(self.angle)
+            self.path.append((self.x, self.y))
+                                
 
         if self.check_floor_roof_collision():
-                self.angle = - self.angle
+            self.angle = - self.angle
+            if self.y >= HEIGHT/2:
+                self.y = HEIGHT - self.radius
+            else:
+                self.y = self.radius
+            self.x += self.speed*cos(self.angle)
+            self.y += self.speed*sin(self.angle)
+            self.path.append((self.x, self.y))
 
-        self.x += self.speed*cos(self.angle)
-        self.y += self.speed*sin(self.angle)
-        self.path.append((self.x, self.y))
+        for other_particle_index in self.square_tribution.values():
+            if other_particle_index is not None:
+                other_particle = particles[other_particle_index]
+                if self.check_collision(other_particle):
+                    # Perform elastic collision
+                    self.speed, other_particle.speed = other_particle.speed, self.speed
+                    self.angle, other_particle.angle = other_particle.angle, self.angle
+                    self.x += self.speed*cos(self.angle)
+                    self.y += self.speed*sin(self.angle)
+                    self.path.append((self.x, self.y))
+                    break
+
+
+
+        
 
     def check_collision(self, other_particle):  ### Verifica se duas partículas colidem
         if sqrt((self.y - other_particle.y)**2 + (self.x - other_particle.x)**2) <= 2*PARTICLE_RADIUS:
@@ -90,10 +112,37 @@ class Particle:
         if (self.y + self.radius) >= HEIGHT or (self.y - self.radius) <= 0:
             return True
         else:
-            return False       
-    
+            return False    
+
+    def attribute_square(self):
+        self.square_tribution = {}
+        for i in (self.y - self.radius, self.y + self.radius):
+            for j in (self.x - self.radius, self.x + self.radius):
+                square = (i // 40, j // 40)
+                if self.square_tribution.get(square) is None:
+                    self.square_tribution[square] = particles.index(self)
+
+
+    def check_square(self, square_map):
+        for square, particle_index in self.square_tribution.items():
+            if particle_index is not None and square in square_map:
+                particle1 = particles[particle_index]
+                for other_particle_index in square_map[square]:
+                    if particle_index != other_particle_index:
+                        particle2 = particles[other_particle_index]
+                        particle1.check_collision(particle2)   
+
 #Create particles
 particles = [Particle(x = random.uniform(0, WIDTH), y = random.uniform(0, HEIGHT), is_tracer = False) for i in range(NUM_PARTICLES)]
+
+square_map = {}
+for p in particles:
+    for i in (p.y - p.radius, p.y + p.radius):
+        for j in (p.x - p.radius, p.x + p.radius):
+            square = (i // 40, j // 40)
+            if square not in square_map:
+                square_map[square] = []
+            square_map[square].append(particles.index(p))
 
 #Choose a tracer
 trace_index = random.randint(0, NUM_PARTICLES - 1)
