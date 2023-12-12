@@ -17,35 +17,6 @@ WHITE = (255, 255, 255)
 RED = (255, 0 , 0)
 BLUE = (0, 0, 255)
 
-def elastic_collision(v1i, v2i, theta1, theta2): ### Devolve as velocidades e ângulos finais numa colisão de partículas
-    # Calculate relative velocity components
-    v_rel_x = v1i * cos(theta1) - v2i * cos(theta2)
-    v_rel_y = v1i * sin(theta1) - v2i * sin(theta2)
-
-    # Calculate final velocities after collision
-    v1f_rel_x = (v1i - v2i) * cos(theta1 - theta2)
-    v1f_rel_y = (v1i - v2i) * sin(theta1 - theta2)
-
-    v2f_rel_x = (v2i - v1i) * cos(theta2 - theta1)
-    v2f_rel_y = (v2i - v1i) * sin(theta2 - theta1)
-
-    # Calculate final velocities in the absolute frame
-    v1f_x = v_rel_x + v1f_rel_x
-    v1f_y = v_rel_y + v1f_rel_y
-
-    v2f_x = v_rel_x + v2f_rel_x
-    v2f_y = v_rel_y + v2f_rel_y
-
-    # Calculate final angles after collision
-    phi1 = atan2(v1f_y, v1f_x)
-    phi2 = atan2(v2f_y, v2f_x)
-
-    # Calculate final speeds
-    v1f = sqrt(v1f_x**2 + v1f_y**2)
-    v2f = sqrt(v2f_x**2 + v2f_y**2)
-
-    return [v1f, v2f, phi1, phi2]
-
 #Particle Class
 class Particle:
     def __init__(self, x, y, is_tracer = False):
@@ -64,11 +35,7 @@ class Particle:
             if self.x >= WIDTH/2: 
                 self.x = WIDTH - self.radius
             else:
-                self.x = self.radius
-            self.x += self.speed*cos(self.angle)
-            self.y += self.speed*sin(self.angle)
-            self.path.append((self.x, self.y))
-                                
+                self.x = self.radius                     
 
         if self.check_floor_roof_collision():
             self.angle = - self.angle
@@ -76,25 +43,17 @@ class Particle:
                 self.y = HEIGHT - self.radius
             else:
                 self.y = self.radius
-            self.x += self.speed*cos(self.angle)
-            self.y += self.speed*sin(self.angle)
-            self.path.append((self.x, self.y))
 
-        for other_particle_index in self.square_tribution.values():
-            if other_particle_index is not None:
-                other_particle = particles[other_particle_index]
-                if self.check_collision(other_particle):
-                    # Perform elastic collision
-                    self.speed, other_particle.speed = other_particle.speed, self.speed
-                    self.angle, other_particle.angle = other_particle.angle, self.angle
-                    self.x += self.speed*cos(self.angle)
-                    self.y += self.speed*sin(self.angle)
-                    self.path.append((self.x, self.y))
-                    break
+        for other_particle in particles:
+            if self.check_collision(other_particle):
+                self.speed, other_particle.speed = other_particle.speed, self.speed
+                self.angle, other_particle.angle = other_particle.angle, self.angle
+                self.x += self.speed*cos(self.angle)
+                self.y += self.speed*sin(self.angle)
 
-
-
-        
+        self.x += self.speed*cos(self.angle)
+        self.y += self.speed*sin(self.angle)
+        self.path.append((self.x, self.y))
 
     def check_collision(self, other_particle):  ### Verifica se duas partículas colidem
         if sqrt((self.y - other_particle.y)**2 + (self.x - other_particle.x)**2) <= 2*PARTICLE_RADIUS:
@@ -114,35 +73,8 @@ class Particle:
         else:
             return False    
 
-    def attribute_square(self):
-        self.square_tribution = {}
-        for i in (self.y - self.radius, self.y + self.radius):
-            for j in (self.x - self.radius, self.x + self.radius):
-                square = (i // 40, j // 40)
-                if self.square_tribution.get(square) is None:
-                    self.square_tribution[square] = particles.index(self)
-
-
-    def check_square(self, square_map):
-        for square, particle_index in self.square_tribution.items():
-            if particle_index is not None and square in square_map:
-                particle1 = particles[particle_index]
-                for other_particle_index in square_map[square]:
-                    if particle_index != other_particle_index:
-                        particle2 = particles[other_particle_index]
-                        particle1.check_collision(particle2)   
-
 #Create particles
 particles = [Particle(x = random.uniform(0, WIDTH), y = random.uniform(0, HEIGHT), is_tracer = False) for i in range(NUM_PARTICLES)]
-
-square_map = {}
-for p in particles:
-    for i in (p.y - p.radius, p.y + p.radius):
-        for j in (p.x - p.radius, p.x + p.radius):
-            square = (i // 40, j // 40)
-            if square not in square_map:
-                square_map[square] = []
-            square_map[square].append(particles.index(p))
 
 #Choose a tracer
 trace_index = random.randint(0, NUM_PARTICLES - 1)
