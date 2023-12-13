@@ -1,7 +1,7 @@
 import pygame
 import sys
 import random
-from math import atan2, cos, sin, pi, sqrt
+from math import cos, sin, pi, sqrt
 
 pygame.init()
 
@@ -48,8 +48,6 @@ class Particle:
             if self.check_collision(other_particle):
                 self.speed, other_particle.speed = other_particle.speed, self.speed
                 self.angle, other_particle.angle = other_particle.angle, self.angle
-                self.x += self.speed*cos(self.angle)
-                self.y += self.speed*sin(self.angle)
 
         self.x += self.speed*cos(self.angle)
         self.y += self.speed*sin(self.angle)
