@@ -30,3 +30,6 @@ def plot_histogram(int_list):
 
 plot_histogram(integer_list)  
 
+#Conseguimos ver que o histograma produzido está longe de representar uma distribuição normal, tanto que muitos inteiros nem chegam a aparecer
+#uma única vez e, dos que têm frequência maior ou igual a 1, a sua distruibuição é bastante desuniforme.
+#Concluímos que através deste teste é evidente verificar um enviesamento nos bits
