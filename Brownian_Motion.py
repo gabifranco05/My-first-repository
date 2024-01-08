@@ -1,7 +1,7 @@
 import pygame
 import sys
 import random
-from math import sqrt, pi
+from math import cos, sin, pi, sqrt
 
 pygame.init()
 
@@ -30,18 +30,49 @@ class Particle:
         self.path = []
 
     def move(self):
-        return
-    
-    def check_collision(self, other_particle):
+        if self.check_wall_collision():
+            self.angle = pi - self.angle
+            if self.x >= WIDTH/2: 
+                self.x = WIDTH - self.radius
+            else:
+                self.x = self.radius                     
+
+        if self.check_floor_roof_collision():
+            self.angle = - self.angle
+            if self.y >= HEIGHT/2:
+                self.y = HEIGHT - self.radius
+            else:
+                self.y = self.radius
+
+        for other_particle in particles:
+            if self.check_collision(other_particle):
+                self.speed, other_particle.speed = other_particle.speed, self.speed
+                self.angle, other_particle.angle = other_particle.angle, self.angle
+
+        self.x += self.speed*cos(self.angle)
+        self.y += self.speed*sin(self.angle)
+        self.path.append((self.x, self.y))
+
+    def check_collision(self, other_particle):  ### Verifica se duas partículas colidem
         if sqrt((self.y - other_particle.y)**2 + (self.x - other_particle.x)**2) <= 2*PARTICLE_RADIUS:
             return True
+        else:
+            return False
         
-    def check_wall_collision(self):
-        pass
+    def check_wall_collision(self):  ### Verifica se a partícula colide com as paredes
+        if (self.x + self.radius) >= WIDTH or (self.x - self.radius) <= 0:
+            return True
+        else:
+            return False 
+        
+    def check_floor_roof_collision(self):  ### Verifica se a partícula colide com o chão ou o teto
+        if (self.y + self.radius) >= HEIGHT or (self.y - self.radius) <= 0:
+            return True
+        else:
+            return False    
 
-    
 #Create particles
-particles = [Particle(x = random.uniform(0 ,800), y = random.uniform(0, 600), is_tracer = False) for i in range(NUM_PARTICLES)]
+particles = [Particle(x = random.uniform(0, WIDTH), y = random.uniform(0, HEIGHT), is_tracer = False) for i in range(NUM_PARTICLES)]
 
 #Choose a tracer
 trace_index = random.randint(0, NUM_PARTICLES - 1)
